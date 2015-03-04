@@ -1,7 +1,7 @@
 {
   "name": "icm-nodejs-client",
   "description": "A simple Node REST client for InformaCast Mobile.",
-  "tags": [
+  "keywords": [
     "InformaCast",
     "Mobile",
     "REST"
@@ -16,19 +16,10 @@
     "url": "http://github.com/singlewire/icm-nodejs-client/issues"
   },
   "license": "TODO",
-  "engines": {
-    "node": ">=0.8.0"
-  },
   "main": "./dist/app.js",
+  "moduleType": ["amd", "node"],
   "dependencies": {
-    "form-data": "^0.2.0",
     "lodash": "2.4.1",
     "rest": "1.2.0"
-  },
-  "devDependencies": {
-    "file-api": "^0.10.4",
-    "gulp": "^3.8.10",
-    "gulp-coffee": "^2.2.0",
-    "w3c-blob": "0.0.1"
   }
 }

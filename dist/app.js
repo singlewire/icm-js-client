@@ -1,41 +1,31 @@
-var ICMClient, Promise, assert, defResource, defSubResource, genReqFn, request, _;
-
-Promise = require('promise');
+var ICMClient, assert, defResource, defSubResource, defaultRequest, errorCode, genReqFn, mime, rest, _;
 
 assert = require('assert');
 
-request = require('request');
-
 _ = require('lodash');
 
-genReqFn = function(path, http, config, method, paginate, options) {
-  var get;
-  get = function(params) {
-    var requestMethod, requestParams, uri;
-    uri = "" + ((config != null ? config.url : void 0) || 'https://api.singlewire.com') + "/api/v1-DEV" + path;
-    requestParams = _.merge({}, (!options.notJSON ? {
-      json: true
+rest = require('rest');
+
+mime = require('rest/interceptor/mime');
+
+errorCode = require('rest/interceptor/errorCode');
+
+defaultRequest = require('rest/interceptor/defaultRequest');
+
+genReqFn = function(path, client, config, method, opts) {
+  return function(params) {
+    var fullUrl, requestParams;
+    fullUrl = "" + config.baseApiUrl + path;
+    requestParams = _.merge({
+      method: method,
+      path: fullUrl
+    }, (!opts.notJSON ? {
+      headers: {
+        'Content-Type': 'application/json'
+      }
     } : void 0), params);
-    requestMethod = http[method.toLowerCase()];
-    return new Promise(function(resolve, reject) {
-      return requestMethod(uri, requestParams, function(error, httpResponse, response) {
-        if (!error && httpResponse.statusCode === 200) {
-          if (paginate) {
-            response.hasNextPage = response.next ? true : false;
-            response.getNextPage = response.next ? _.partial(get, _.merge(params, {
-              form: {
-                start: response.next
-              }
-            })) : _.noop;
-          }
-          return resolve(response);
-        } else {
-          return reject([error, httpResponse, response]);
-        }
-      });
-    });
+    return client(requestParams);
   };
-  return get;
 };
 
 defSubResource = function(basePath, http, config) {
@@ -57,19 +47,19 @@ defResource = function(path, http, config, optsOrCallback, callback) {
         subResources = callback(defSubResource(subPath, http, config));
       }
       return _.merge({}, (!_.contains(opts.exclude, 'show') ? {
-        show: genReqFn(subPath, http, config, 'GET', false, opts)
+        show: genReqFn(subPath, http, config, 'GET', opts)
       } : void 0), (!_.contains(opts.exclude, 'remove') ? {
-        remove: genReqFn(subPath, http, config, 'DEL', false, opts)
+        remove: genReqFn(subPath, http, config, 'DELETE', opts)
       } : void 0), (!_.contains(opts.exclude, 'update') ? {
-        update: genReqFn(subPath, http, config, 'PUT', false, opts)
+        update: genReqFn(subPath, http, config, 'PUT', opts)
       } : void 0), subResources);
     } else {
       return _.merge({}, (opts.noId ? {
-        get: genReqFn(path, http, config, 'GET', false, opts)
+        get: genReqFn(path, http, config, 'GET', opts)
       } : void 0), (!_.contains(opts.exclude, 'list') ? {
-        list: genReqFn(path, http, config, 'GET', true, opts)
+        list: genReqFn(path, http, config, 'GET', opts)
       } : void 0), (!_.contains(opts.exclude, 'create') ? {
-        create: genReqFn(path, http, config, 'POST', false, opts)
+        create: genReqFn(path, http, config, 'POST', opts)
       } : void 0));
     }
   };
@@ -77,14 +67,18 @@ defResource = function(path, http, config, optsOrCallback, callback) {
 
 ICMClient = function(config) {
   var http;
+  config = _.cloneDeep(config);
   assert(config, 'Config object must be present');
   assert(config.token, 'Token must be present in config');
-  http = request.defaults(_.merge({}, config.requestDefaults, {
+  config.baseApiUrl = "" + ((config != null ? config.url : void 0) || 'https://api.singlewire.com') + "/api/v1-DEV";
+  http = rest.wrap(mime).wrap(errorCode).wrap(defaultRequest, {
     headers: {
-      'X-Client-Version': 'NodejsClient 0.0.1',
-      Authorization: "Bearer " + config.token
+      'X-Client-Version': 'JSClient 0.0.1',
+      Authorization: "Bearer " + config.token,
+      Accept: 'application/json'
     }
-  }));
+  });
+  http = _.isFunction(config.clientSetup) ? config.clientSetup(http) : http;
   return {
     users: defResource('/users', http, config, function(subResource) {
       return {
@@ -183,10 +177,17 @@ ICMClient = function(config) {
       var self;
       self = this;
       return promise.then(function(response) {
-        var shouldContinue;
+        var client, nextPageRequestParams, originalRequestParams, shouldContinue, _ref;
         shouldContinue = typeof successCallback === "function" ? successCallback(response) : void 0;
-        if (shouldContinue && response.hasNextPage) {
-          return self.paginate(response.getNextPage(), successCallback, errorCallback);
+        if (shouldContinue && ((_ref = response.entity) != null ? _ref.next : void 0)) {
+          client = response.request.originator;
+          originalRequestParams = _.omit(response.request, 'cancel', 'canceled', 'originator');
+          nextPageRequestParams = _.merge(originalRequestParams, {
+            params: {
+              start: response.entity.next
+            }
+          });
+          return self.paginate(client(nextPageRequestParams), successCallback, errorCallback);
         }
       }, function(error) {
         return typeof errorCallback === "function" ? errorCallback(error) : void 0;

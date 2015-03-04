@@ -1,24 +1,17 @@
-Promise = require 'promise'
 assert = require 'assert'
-request = require 'request'
 _ = require 'lodash'
+rest = require 'rest'
+mime = require 'rest/interceptor/mime'
+errorCode = require 'rest/interceptor/errorCode'
+defaultRequest = require 'rest/interceptor/defaultRequest'
 
-genReqFn = (path, http, config, method, paginate, options) ->
-  get = (params) ->
-    uri = "#{config?.url or 'https://api.singlewire.com'}/api/v1-DEV#{path}"
-    requestParams = _.merge {}, (unless options.notJSON then {json: true}), params
-    requestMethod = http[method.toLowerCase()]
-
-    new Promise (resolve, reject) ->
-      requestMethod uri, requestParams, (error, httpResponse, response) ->
-        if not error and httpResponse.statusCode == 200
-          if paginate
-            response.hasNextPage = if response.next then true else false
-            response.getNextPage = if response.next then _.partial(get, _.merge(params, form: start: response.next)) else _.noop
-          resolve response
-        else
-          reject [error, httpResponse, response]
-  get
+genReqFn = (path, client, config, method, opts) ->
+  (params) ->
+    fullUrl = "#{config.baseApiUrl}#{path}"
+    requestParams = _.merge {method: method, path: fullUrl},
+      (unless opts.notJSON then headers: 'Content-Type': 'application/json'),
+      params
+    client requestParams
 
 defSubResource = (basePath, http, config) ->
   (path, optionsOrCallback, callback) ->
@@ -35,24 +28,32 @@ defResource = (path, http, config, optsOrCallback, callback) ->
       else if _.isFunction callback
         subResources = callback defSubResource(subPath, http, config)
       _.merge {},
-        (if not _.contains(opts.exclude, 'show') then show: genReqFn(subPath, http, config, 'GET', false, opts)),
-        (if not _.contains(opts.exclude, 'remove') then remove: genReqFn(subPath, http, config, 'DEL', false, opts)),
-        (if not _.contains(opts.exclude, 'update') then update: genReqFn(subPath, http, config, 'PUT', false, opts)),
+        (if not _.contains(opts.exclude, 'show') then show: genReqFn(subPath, http, config, 'GET', opts)),
+        (if not _.contains(opts.exclude, 'remove') then remove: genReqFn(subPath, http, config, 'DELETE', opts)),
+        (if not _.contains(opts.exclude, 'update') then update: genReqFn(subPath, http, config, 'PUT', opts)),
         subResources
     else
       _.merge {},
-        (if opts.noId then get: genReqFn(path, http, config, 'GET', false, opts)),
-        (if not _.contains(opts.exclude, 'list') then list: genReqFn(path, http, config, 'GET', true, opts)),
-        (if not _.contains(opts.exclude, 'create') then create: genReqFn(path, http, config, 'POST', false, opts))
+        (if opts.noId then get: genReqFn(path, http, config, 'GET', opts)),
+        (if not _.contains(opts.exclude, 'list') then list: genReqFn(path, http, config, 'GET', opts)),
+        (if not _.contains(opts.exclude, 'create') then create: genReqFn(path, http, config, 'POST', opts))
 
 ICMClient = (config) ->
+  config = _.cloneDeep config
   assert config, 'Config object must be present'
   assert config.token, 'Token must be present in config'
 
-  http = request.defaults _.merge {}, config.requestDefaults,
+  config.baseApiUrl = "#{config?.url or 'https://api.singlewire.com'}/api/v1-DEV"
+
+  http = rest.wrap mime
+  .wrap errorCode
+  .wrap defaultRequest,
     headers:
-      'X-Client-Version': 'NodejsClient 0.0.1'
+      'X-Client-Version': 'JSClient 0.0.1'
       Authorization: "Bearer #{config.token}"
+      Accept: 'application/json'
+
+  http = if _.isFunction(config.clientSetup) then config.clientSetup(http) else http
 
   users: defResource '/users', http, config, (subResource) ->
     subscriptions: subResource '/subscriptions'
@@ -96,8 +97,11 @@ ICMClient = (config) ->
     self = this
     promise.then (response) ->
       shouldContinue = successCallback? response
-      if shouldContinue and response.hasNextPage
-        self.paginate response.getNextPage(), successCallback, errorCallback
+      if shouldContinue and response.entity?.next
+        client = response.request.originator
+        originalRequestParams = _.omit response.request, 'cancel', 'canceled', 'originator'
+        nextPageRequestParams = _.merge originalRequestParams, params: start: response.entity.next
+        self.paginate client(nextPageRequestParams), successCallback, errorCallback
     , (error) ->
       errorCallback? error
 

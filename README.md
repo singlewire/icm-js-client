@@ -1,8 +1,8 @@
 # InformaCast Mobile REST Client
 
 A simple REST client for Node to communicate with the InformaCast Mobile API. This library defines a simple wrapper
-around the great [https://www.npmjs.com/package/request](request) library. Because of this, the format of request params
-and client configuration params are the same.
+around the great [https://github.com/cujojs/rest](rest) library. Because of this, the format of request params and
+client configuration params are the same.
 
 ## Usage
 
@@ -22,17 +22,17 @@ var client = ICMClient({
 
 A list of options that can be passed to create the client can be found in the table below:
 
-| Name            | Required | Default                      | Description                                             |
-|-----------------|----------|------------------------------|---------------------------------------------------------|
-| url             | false    | 'https://api.singlewire.com' | Used if necessary to provide a different API endpoint.  |
-| token           | true     | null                         | The required API token to authorize requests.           |
-| requestDefaults | false    | {}                           | The defaults that can be passed to the request library  |
+| Name            | Required | Type     | Default                     | Description                                                                                                                                                                   |
+|-----------------|----------|----------|-----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| url             | false    | String   |'https://api.singlewire.com' | Used if necessary to provide a different API endpoint. Useful for testing.                                                                                                    |
+| token           | true     | String   | null                        | The required API token to authorize requests.                                                                                                                                 |
+| clientSetup     | false    | Function | null                        | Passes the wrapped `rest` object for additional configuration. Useful for defining additional [https://github.com/cujojs/rest/blob/master/docs/interceptors.md](interceptors) |
 
 ### Create
 
 ```javascript
-client.users().create({form: {name: 'John Smith', email: 'john.smith@acme.com'}});
-client.notifications().create({form: {messageTemplateId: 'cc93bfd0-9917-11e4-a401-c22f013130a9', subject: 'FooBar'}});
+client.users().create({entity: {name: 'John Smith', email: 'john.smith@acme.com'}});
+client.notifications().create({entity: {messageTemplateId: 'cc93bfd0-9917-11e4-a401-c22f013130a9', subject: 'FooBar'}});
 ```
 
 ### Read
@@ -51,10 +51,10 @@ To list/paginate/search a resource:
 client.users().list();
 
 // List with max of 50 per page
-client.users().list({form: {limit: 50}});
+client.users().list({params: {limit: 50}});
 
 // Search for users with the name John
-client.users().list({form: {q: 'John'}});
+client.users().list({params: {q: 'John'}});
 
 // The client library a helper method to make pagination easier
 client.paginate(client.users().list(), function(usersPage) {
@@ -68,8 +68,8 @@ client.paginate(client.users().list(), function(usersPage) {
 ### Update
 
 ```javascript
-client.users('de7b51a0-5a1e-11e4-ab31-8a1d033dd637').update({form: {name: 'John Jacob Smith'}});
-client.distributionLists('dada08f0-7fc3-11e4-a09c-7a198bebdf90').update({form: {name: 'Updated Name'}});
+client.users('de7b51a0-5a1e-11e4-ab31-8a1d033dd637').update({entity: {name: 'John Jacob Smith'}});
+client.distributionLists('dada08f0-7fc3-11e4-a09c-7a198bebdf90').update({entity: {name: 'Updated Name'}});
 ```
 
 ### Delete
@@ -81,18 +81,36 @@ client.distributionLists('dada08f0-7fc3-11e4-a09c-7a198bebdf90').remove();
 
 ### Note
 
-Every request returns a `Promise` object and can be used like so:
+Every request returns a `Promise` object and can be used as described below. The response format can be found in the
+[https://github.com/cujojs/rest/blob/master/docs/interfaces.md#common-response-properties](Common Response Properties)
+section of the [https://github.com/cujojs/rest](rest) docs.
 
 ```javascript
 var responsePromise = ...;
 responsePromise.then(function(response) {
-    // Response is typically the deserialized JSON
+    // Request was successful, process the data
 }, function (error) {
-    var requestError = error[0]; // The error
-    var httpRequest = error[1]; // The request that was made
-    var response = error[2]; // The error response
+    // Request failed
 });
 ```
+
+## Building
+
+Make sure gulp is installed:
+
+```npm install -g gulp```
+
+Make sure you've ran:
+
+```npm install```
+
+To build, simply run:
+
+```gulp```
+
+## Testing
+
+```npm test```
 
 ## License
 
