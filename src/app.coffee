@@ -93,6 +93,8 @@ ICMClient = (config) ->
 
   session: defResource '/session', http, config, exclude: ['update', 'create', 'remove', 'list', 'show'], noId: true
 
+  reports: defResource '/reports', http, config, exclude: ['update', 'create', 'remove']
+
   paginate: (promise, successCallback, errorCallback) ->
     self = this
     promise.then (response) ->

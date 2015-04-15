@@ -15,11 +15,11 @@
   "bugs": {
     "url": "http://github.com/singlewire/icm-nodejs-client/issues"
   },
-  "license": "TODO",
+  "license": "MIT",
   "main": "./dist/app.js",
   "moduleType": ["amd", "node"],
   "dependencies": {
-    "lodash": "2.4.1",
-    "rest": "1.2.0"
+    "lodash": "~2.4.1",
+    "rest": "~1.3.0"
   }
 }
