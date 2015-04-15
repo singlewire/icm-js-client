@@ -4,15 +4,33 @@ A simple REST client for Node to communicate with the InformaCast Mobile API. Th
 around the great [https://github.com/cujojs/rest](rest) library. Because of this, the format of request params and
 client configuration params are the same.
 
+## Installation
+
+### Node
+
+```npm install icm-js-client --save```
+
+### Browser
+
+```bower install icm-js-client --save```
+
 ## Usage
 
 Make sure to require the client in your code
+
+### Node
 
 ```javascript
 var ICMClient = require('icm-nodejs-client');
 ```
 
-Create an instance of the client
+### Browser
+
+```html
+<script type="text/javascript" src="vendor/bundle.min.js"></script>
+```
+
+### Create an instance of the client
 
 ```javascript
 var client = ICMClient({
@@ -98,11 +116,12 @@ responsePromise.then(function(response) {
 
 Make sure gulp is installed:
 
-```npm install -g gulp```
+```npm install -g gulp bower```
 
 Make sure you've ran:
 
 ```npm install```
+```bower install```
 
 To build, simply run:
 
@@ -111,6 +130,8 @@ To build, simply run:
 ## Testing
 
 ```npm test```
+
+For browser tests open test/index.html
 
 ## License
 
