@@ -1,7 +1,7 @@
 # InformaCast Mobile REST Client
 
 A simple REST client for Node to communicate with the InformaCast Mobile API. This library defines a simple wrapper
-around the great [https://github.com/cujojs/rest](rest) library. Because of this, the format of request params and
+around the great [rest](https://github.com/cujojs/rest) library. Because of this, the format of request params and
 client configuration params are the same.
 
 ## Installation
@@ -40,11 +40,11 @@ var client = ICMClient({
 
 A list of options that can be passed to create the client can be found in the table below:
 
-| Name            | Required | Type     | Default                     | Description                                                                                                                                                                   |
-|-----------------|----------|----------|-----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| url             | false    | String   |'https://api.singlewire.com' | Used if necessary to provide a different API endpoint. Useful for testing.                                                                                                    |
-| token           | true     | String   | null                        | The required API token to authorize requests.                                                                                                                                 |
-| clientSetup     | false    | Function | null                        | Passes the wrapped `rest` object for additional configuration. Useful for defining additional [https://github.com/cujojs/rest/blob/master/docs/interceptors.md](interceptors) |
+| Name            | Required | Type     | Default                              | Description                                                                                                                                                                   |
+|-----------------|----------|----------|--------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| url             | false    | String   |'https://api.icmobile.singlewire.com' | Used if necessary to provide a different API endpoint. Useful for testing.                                                                                                    |
+| token           | true     | String   | null                                 | The required API token to authorize requests.                                                                                                                                 |
+| clientSetup     | false    | Function | null                                 | Passes the wrapped `rest` object for additional configuration. Useful for defining additional [interceptors](https://github.com/cujojs/rest/blob/master/docs/interceptors.md) |
 
 ### Create
 
@@ -100,8 +100,8 @@ client.distributionLists('dada08f0-7fc3-11e4-a09c-7a198bebdf90').remove();
 ### Note
 
 Every request returns a `Promise` object and can be used as described below. The response format can be found in the
-[https://github.com/cujojs/rest/blob/master/docs/interfaces.md#common-response-properties](Common Response Properties)
-section of the [https://github.com/cujojs/rest](rest) docs.
+[Common Response Properties](https://github.com/cujojs/rest/blob/master/docs/interfaces.md#common-response-properties)
+section of the [rest](https://github.com/cujojs/rest) docs.
 
 ```javascript
 var responsePromise = ...;
@@ -120,18 +120,22 @@ Make sure gulp is installed:
 
 Make sure you've ran:
 
-```npm install```
-```bower install```
+```
+npm install
+bower install
+```
 
 To build, simply run:
 
-```gulp```
+```
+gulp
+```
 
 ## Testing
 
 ```npm test```
 
-For browser tests open test/index.html
+For browser tests open ```test/index.html```
 
 ## License
 
