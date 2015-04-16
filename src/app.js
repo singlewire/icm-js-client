@@ -1,13 +1,62 @@
-var _ = require('lodash');
 var rest = require('rest');
 var mime = require('rest/interceptor/mime');
 var errorCode = require('rest/interceptor/errorCode');
 var defaultRequest = require('rest/interceptor/defaultRequest');
 
+function isFunction(val) {
+    return typeof val === 'function';
+}
+
+function isObject(val) {
+    if (val === null) {
+        return false;
+    }
+    return (typeof val === 'function') || (typeof val === 'object');
+}
+
+function merge() {
+    var dst = {}, src, p, args = [].splice.call(arguments, 0);
+    while (args.length > 0) {
+        src = args.splice(0, 1)[0];
+        if (toString.call(src) == '[object Object]') {
+            for (p in src) {
+                if (src.hasOwnProperty(p)) {
+                    if (toString.call(src[p]) == '[object Object]') {
+                        dst[p] = merge(dst[p] || {}, src[p]);
+                    } else {
+                        dst[p] = src[p];
+                    }
+                }
+            }
+        }
+    }
+    return dst;
+}
+
+function contains(array, value) {
+    if (array) {
+        return array.indexOf(value) !== -1;
+    }
+    return false;
+}
+
+function cloneDeep(obj) {
+    if (obj == null || typeof(obj) != 'object') {
+        return obj;
+    }
+    var temp = obj.constructor();
+    for (var key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            temp[key] = cloneDeep(obj[key]);
+        }
+    }
+    return temp;
+}
+
 function genReqFn(path, client, config, method, opts) {
     return function (params) {
         var fullUrl = '' + config.baseApiUrl + path;
-        var requestParams = _.merge({method: method, path: fullUrl},
+        var requestParams = merge({method: method, path: fullUrl},
             opts.notJSON ? {} : {headers: {'Content-Type': 'application/json'}},
             params);
         return client(requestParams);
@@ -22,31 +71,31 @@ function defSubResource(basePath, http, config) {
 
 function defResource(path, http, config, optsOrCallback, callback) {
     return function (id) {
-        var opts = _.isObject(optsOrCallback) ? optsOrCallback : {};
+        var opts = isObject(optsOrCallback) ? optsOrCallback : {};
         if (id) {
             var subPath = path + '/' + id;
             var subResources = {};
-            if (_.isFunction(optsOrCallback)) {
+            if (isFunction(optsOrCallback)) {
                 subResources = optsOrCallback(defSubResource(subPath, http, config));
-            } else if (_.isFunction(callback)) {
+            } else if (isFunction(callback)) {
                 subResources = callback(defSubResource(subPath, http, config));
             }
-            return _.merge({},
-                _.contains(opts.exclude, 'show') ? {} : {show: genReqFn(subPath, http, config, 'GET', opts)},
-                _.contains(opts.exclude, 'remove') ? {} : {remove: genReqFn(subPath, http, config, 'DELETE', opts)},
-                _.contains(opts.exclude, 'update') ? {} : {update: genReqFn(subPath, http, config, 'PUT', opts)},
+            return merge({},
+                contains(opts.exclude, 'show') ? {} : {show: genReqFn(subPath, http, config, 'GET', opts)},
+                contains(opts.exclude, 'remove') ? {} : {remove: genReqFn(subPath, http, config, 'DELETE', opts)},
+                contains(opts.exclude, 'update') ? {} : {update: genReqFn(subPath, http, config, 'PUT', opts)},
                 subResources);
         } else {
-            return _.merge({},
+            return merge({},
                 (!opts.noId ? {} : {get: genReqFn(path, http, config, 'GET', opts)}),
-                _.contains(opts.exclude, 'list') ? {} : {list: genReqFn(path, http, config, 'GET', opts)},
-                _.contains(opts.exclude, 'create') ? {} : {create: genReqFn(path, http, config, 'POST', opts)});
+                contains(opts.exclude, 'list') ? {} : {list: genReqFn(path, http, config, 'GET', opts)},
+                contains(opts.exclude, 'create') ? {} : {create: genReqFn(path, http, config, 'POST', opts)});
         }
     };
 }
 
 function ICMClient(config) {
-    config = _.cloneDeep(config);
+    config = cloneDeep(config);
 
     if (!config) {
         throw Error('Config object must be present');
@@ -66,7 +115,7 @@ function ICMClient(config) {
             }
         });
 
-    http = _.isFunction(config.clientSetup) ? config.clientSetup(http) : http;
+    http = isFunction(config.clientSetup) ? config.clientSetup(http) : http;
 
     return {
         users: defResource('/users', http, config, function (subResource) {
@@ -153,12 +202,15 @@ function ICMClient(config) {
             return promise.then(function (response) {
                 if (successCallback && successCallback(response) && response.entity && response.entity.next) {
                     var client = response.request.originator;
-                    var originalRequestParams = _.omit(response.request, 'cancel', 'canceled', 'originator');
-                    var nextPageRequestParams = _.merge(originalRequestParams, {params: {start: response.entity.next}});
+                    var originalRequestParams = cloneDeep(response.request);
+                    delete originalRequestParams.cancel;
+                    delete originalRequestParams.canceled;
+                    delete originalRequestParams.originator;
+                    var nextPageRequestParams = merge(originalRequestParams, {params: {start: response.entity.next}});
                     return self.paginate(client(nextPageRequestParams), successCallback, errorCallback);
                 }
             }, function (error) {
-                if (_.isFunction(errorCallback)) {
+                if (isFunction(errorCallback)) {
                     errorCallback(error)
                 }
             });
