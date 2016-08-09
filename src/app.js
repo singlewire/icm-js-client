@@ -122,6 +122,7 @@ function ICMClient(config) {
             return {
                 subscriptions: subResource('/subscriptions'),
                 devices: subResource('/devices'),
+                locations: subResource('/locations'),
                 tokens: subResource('/tokens', {exclude: ['update']}),
                 notifications: subResource('/notifications', {exclude: ['update', 'create']}, function (subResource) {
                     return {
@@ -162,8 +163,17 @@ function ICMClient(config) {
                 })
             };
         }),
-        confirmationRequests: defResource('/confirmation-requests', function (subResource) {
+        confirmationRequests: defResource('/confirmation-requests', http, config, function (subResource) {
             return {escalationRules: subResource('/escalation-rules')};
+        }),
+        areaOfInterests: defResource('/areas-of-interest', http, config, function (subResource) {
+          return {
+            boundaryTriggers: subResource('/boundary-triggers', function (subResource) {
+              return {
+                activities: subResource('/activities', {exclude: ['update', 'create', 'remove']})
+              };
+            }),
+          };
         }),
         notifications: defResource('/notifications', http, config, function (subResource) {
             return {
@@ -196,6 +206,7 @@ function ICMClient(config) {
             noId: true
         }),
         reports: defResource('/reports', http, config, {exclude: ['update', 'create', 'remove']}),
+        extensions: defResource('/extensions', http, config, {exclude: ['update', 'remove']}),
         triggers: defResource('/triggers', http, config),
         paginate: function (promise, successCallback, errorCallback) {
             var self = this;
