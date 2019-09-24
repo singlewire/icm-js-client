@@ -1,3 +1,7 @@
+# DEPRECATION NOTICE
+
+This library is now deprecated and no longer maintained. We recommend using the new [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch).
+
 # InformaCast Mobile REST Client
 
 A simple REST client for Node to communicate with the InformaCast Mobile API. This library defines a simple wrapper
